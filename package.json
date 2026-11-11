@@ -1,0 +1,24 @@
+{
+  "name": "genealogy-cache",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "build:runtime": "tsc -p tsconfig.build.json",
+    "start": "npm run build:runtime && node dist/local.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.723.0",
+    "@aws-sdk/lib-dynamodb": "^3.723.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^5.1.0",
+    "typescript": "^5.7.2",
+    "vitest": "^5.1.0"
+  }
+}

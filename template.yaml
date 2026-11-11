@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Genealogy record cache API
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Timeout: 10
+    MemorySize: 256
+Resources:
+  RecordsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{AttributeName: pk, AttributeType: S}]
+      KeySchema: [{AttributeName: pk, KeyType: HASH}]
+      SSESpecification: {SSEEnabled: true}
+  CacheApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handler.handler
+      Environment: {Variables: {TABLE_NAME: !Ref RecordsTable}}
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref RecordsTable}
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+        Cors: {AllowMethods: [GET, POST, OPTIONS], AllowHeaders: [content-type], AllowOrigins: ["https://your-ui.example"]}
+Outputs:
+  ApiUrl: {Value: !GetAtt CacheApiUrl.FunctionUrl}
