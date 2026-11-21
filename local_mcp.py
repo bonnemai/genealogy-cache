@@ -14,7 +14,7 @@ def list_manuscripts() -> list[str]:
 
 @server.tool()
 def transcribe_manuscript(filename: str) -> dict:
-    """Transcribe a local manuscript with Ollama, reusing a cached result when possible."""
+    """Transcribe a local manuscript with the configured Ollama or MLX-VLM backend, reusing a cached result when possible."""
     return worker.transcribe(filename)
 
 

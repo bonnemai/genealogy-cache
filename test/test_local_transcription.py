@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from local_transcription import Transcriber
 
@@ -11,7 +12,7 @@ class TestTranscriber(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.worker = Transcriber(self.tmp.name, "test-model")
+        self.worker = Transcriber(self.tmp.name, "test-model", backend="ollama")
         self.image = self.worker.inbox / "act.jpg"
         self.image.write_bytes(b"image fixture")
 
@@ -59,6 +60,41 @@ class TestTranscriber(unittest.TestCase):
             request = open_url.call_args.args[0]
             self.assertEqual(request.full_url, "http://127.0.0.1:11434/api/chat")
             self.assertEqual(json.loads(request.data)["model"], "test-model")
+
+    def test_mlx_separate_cache_and_metadata(self):
+        mlx = Transcriber(self.tmp.name, "test-model", backend="mlx")
+        with patch.object(self.worker, "_infer", return_value="Ollama"):
+            self.worker.transcribe("act.jpg")
+        self.assertIsNone(mlx.get_transcription("act.jpg"))
+        with patch.object(mlx, "_infer_mlx", return_value="MLX") as infer:
+            result = mlx.transcribe("act.jpg")
+            self.assertTrue(mlx.transcribe("act.jpg")["cacheHit"])
+        infer.assert_called_once()
+        self.assertEqual(result["parserVersion"], "mlx/test-model/prompt-1")
+        self.assertEqual(self.worker.get_transcription("act.jpg")["extractedText"], "Ollama")
+        self.assertIsNone(Transcriber(self.tmp.name, "test-model", backend="mlx", max_tokens=100).get_transcription("act.jpg"))
+
+    def test_mlx_generation(self):
+        worker = Transcriber(self.tmp.name, "test-model", backend="mlx", max_tokens=10)
+        load = Mock(return_value=("model", "processor"))
+        generate = Mock(return_value=SimpleNamespace(text="transcription", generation_tokens=5))
+        template = Mock(return_value="formatted")
+        image = Mock()
+        image.open.return_value.__enter__ = Mock(return_value=Mock())
+        image.open.return_value.__exit__ = Mock(return_value=False)
+        modules = {"mlx_vlm": SimpleNamespace(load=load, generate=generate),
+                   "mlx_vlm.prompt_utils": SimpleNamespace(apply_chat_template=template),
+                   "mlx_vlm.utils": SimpleNamespace(load_config=Mock(return_value={})),
+                   "PIL": SimpleNamespace(Image=image)}
+        with patch.dict("sys.modules", modules):
+            self.assertEqual(worker._infer_mlx(b"image"), "transcription")
+            self.assertEqual(worker._infer_mlx(b"other image"), "transcription")
+            load.assert_called_once_with("test-model")
+            self.assertEqual(generate.call_args.kwargs["max_tokens"], 10)
+            generate.return_value.generation_tokens = 10
+            with self.assertRaisesRegex(RuntimeError, "truncated"):
+                worker.transcribe("act.jpg")
+            self.assertIsNone(worker.get_transcription("act.jpg"))
 
 
 if __name__ == "__main__":
