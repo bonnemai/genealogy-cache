@@ -30,7 +30,7 @@ export const server = createServer(async (request: IncomingMessage, response: Se
       rawPath: requestUrl.pathname,
       queryStringParameters,
       body: await requestBody(request)
-    } as never, {} as never, (() => undefined) as never);
+    } as never);
     response.statusCode = result.statusCode ?? 500;
     for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
     response.end(result.body ?? "");
