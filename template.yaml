@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: Genealogy record cache API
 Globals:
   Function:
-    Runtime: nodejs22.x
+    Runtime: nodejs24.x
     Architectures: [arm64]
     Timeout: 10
     MemorySize: 256
@@ -25,6 +25,13 @@ Resources:
         - DynamoDBCrudPolicy: {TableName: !Ref RecordsTable}
       FunctionUrlConfig:
         AuthType: AWS_IAM
-        Cors: {AllowMethods: [GET, POST, OPTIONS], AllowHeaders: [content-type], AllowOrigins: ["https://your-ui.example"]}
+        Cors: {AllowMethods: [GET, POST], AllowHeaders: [content-type], AllowOrigins: ["https://your-ui.example"]}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints: [src/handler.ts]
+        Format: esm
+        Minify: false
+        Target: es2024
 Outputs:
   ApiUrl: {Value: !GetAtt CacheApiUrl.FunctionUrl}

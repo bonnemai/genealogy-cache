@@ -5,3 +5,4 @@ coverage/
 .env
 .venv/
 __pycache__/
+run.local.sh
