@@ -4,7 +4,7 @@ import type { Repository } from "../src/repository.js";
 
 const repository: Repository = { get: vi.fn(), put: vi.fn(), list: vi.fn() };
 const event = (method: string, rawPath: string, extra = {}) => ({ requestContext: { http: { method } }, rawPath, headers: {}, queryStringParameters: {}, body: null, ...extra }) as any;
-const invoke = (input: any) => makeHandler(repository)(input, {} as any, (() => {}) as any) as Promise<any>;
+const invoke = (input: any) => makeHandler(repository)(input) as Promise<any>;
 describe("API", () => {
   it("returns a cache miss by URL", async () => { vi.mocked(repository.get).mockResolvedValueOnce(undefined); const response = await invoke(event("GET", "/records", { queryStringParameters: { url: "https://example.org/a" } })); expect(response.statusCode).toBe(200); expect(JSON.parse(response.body).found).toBe(false); expect(repository.get).toHaveBeenCalledWith("https://example.org/a"); });
   it("lists records and bounds the requested size", async () => { vi.mocked(repository.list).mockResolvedValueOnce([]); const response = await invoke(event("GET", "/records", { queryStringParameters: { limit: "1000" } })); expect(response.statusCode).toBe(200); expect(repository.list).toHaveBeenCalledWith(100); });

@@ -28,12 +28,24 @@ URLs are canonicalised and hashed globally. Therefore, when person A has parsed 
 
 ## Development
 
-Requires Node.js 22+.
+The local transcription MCP has moved to [genealogy-transcription-mcp](../genealogy-transcription-mcp/README.md).
+
+### AWS backend
+
+Requires Node.js 24+.
 
 ```sh
 npm install
 npm run build
 npm test
+```
+
+For an AWS deployment, SAM transpiles the TypeScript Lambda with esbuild:
+
+```sh
+sam validate --lint
+sam build
+sam deploy --guided
 ```
 
 Run the local HTTP adapter with an in-memory repository:
